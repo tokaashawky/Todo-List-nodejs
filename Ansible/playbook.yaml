@@ -1,0 +1,4 @@
+- name: Install Docker on remote VM
+  hosts: nodes
+  roles:
+    - docker
