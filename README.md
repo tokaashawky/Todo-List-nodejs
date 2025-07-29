@@ -49,4 +49,46 @@ Once pushed to main, GitHub Actions will:
 - Build the image
 - Push it to docker.io/<your-username>/todo-list-nodejs:latest (private)
 
-## 📌 Ansible Setup on Linux VM (Part 2)
+## 📌 Ansible Setup on remote Ubuntu EC2 (Part 2)
+
+### 1- Download the SSH Private Key
+Create Ec2 and download its SSH Private Key.
+
+### 2- Set Secure Permissions
+```bash
+chmod 400 ~/.ssh/ToDo_KeyPair.pem
+# AWS requires 400 permissions for the key to be used with SSH.
+```
+
+### 3- Configure SSH Shortcut from your local machine
+```bash 
+# Edit your SSH config:
+vim ~/.ssh/config
+```
+Add:
+```bash 
+host TODO
+    hostname Ec2_public_IP
+    IdentityFile ToDo_KeyPair.pem
+    User ubuntu
+    StrictHostKeyChecking no
+```
+
+### 4- Test the Connection
+```bash
+  ssh TODO
+```
+If it logs in to the EC2 instance, you're ready to use Ansible:
+```bash
+ansible-playbook playbook.yaml
+```
+
+### 5- Verify Docker on EC2
+```bash
+ssh TODO
+docker --version
+```
+
+## 📌 On the VM, use docker compose to run the application (Part 3)
+
+
