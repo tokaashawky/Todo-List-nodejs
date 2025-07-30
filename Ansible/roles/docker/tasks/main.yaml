@@ -60,4 +60,17 @@
       - docker-ce-cli
       - containerd.io
       - docker-buildx-plugin
-      - docker-compose-plugin
+
+- name: Add ubuntu user to docker group
+  user:
+    name: ubuntu
+    groups: docker
+    append: yes
+
+- name: Download Docker Compose v2 binary using shell
+  shell: |
+    curl -L https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+    chmod +x /usr/local/bin/docker-compose
+  args:
+    creates: /usr/local/bin/docker-compose
+
