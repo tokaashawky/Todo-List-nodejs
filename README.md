@@ -9,8 +9,6 @@ This project is a fork of the original [Todo-List-nodejs](https://github.com/Ank
 - GitHub Actions CI pipeline
 - Image push to a **private Docker registry**
 
----
-
 ## 🚀 Steps to Reproduce
 
 ### 1️⃣ Clone the Repository
@@ -22,15 +20,15 @@ cd Todo-List-nodejs
 ### 2️⃣ Configure Your MongoDB
 Update the .env file to use your own MongoDB instance:
 ```bash
-MONGODB_URL=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>?retryWrites=true&w=majority
+MONGODB_URL=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>
 ```
 
 ### 3️⃣ Dockerize the Application
 A **Dockerfile** has been added to containerize the Node.js app.
 Build and Run the Docker Image:
-```bash
-  docker build -t todo-app -f Docker/Dockerfile 
-  docker run --env-file .env -p 4000:4000 todo-app
+```bash  
+  docker build -t tokashawky/todo-list-nodejs:latest -f Docker/Dockerfile .
+  # docker run --env-file .env -p 4000:4000 tokashawky/todo-list-nodejs:latest
 ```
 
 ### 4️⃣ CI Pipeline with GitHub Actions
@@ -78,8 +76,10 @@ host TODO
 ```bash
   ssh TODO
 ```
-If it logs in to the EC2 instance, you're ready to use Ansible:
+If it logs in to the EC2 instance, you're ready to use Ansible from your machine:
+Make sure **ToDo_KeyPair.pem** inside **Ansible** directory
 ```bash
+cd Ansible
 ansible-playbook playbook.yaml
 ```
 
@@ -91,4 +91,61 @@ docker --version
 
 ## 📌 On the VM, use docker compose to run the application (Part 3)
 
+### 1- Prerequisites on the EC2
+Make sure your Ansible playbook (from Part 2) has already done the following:
+- Docker & Docker Compose installed
+- ubuntu user added to the docker R
+- Your app image pushed to Docker Hub (private or public)
+- .env file placed at /home/ubuntu/.env
 
+### 2- Upload Compose + .env File
+From local:
+```bash
+scp -i ToDo_KeyPair.pem ../Docker/docker-compose.yaml ubuntu@ec2_public_IP:~
+scp -i ToDo_KeyPair.pem ../.env ubuntu@ec2_public_IP:~
+```
+
+### 3- Run the Application On the EC2
+On EC2: 
+```bash 
+  # on ubuntu home
+  docker login -u tokashawky 
+  docker-compose up 
+  # Check container status
+  docker ps
+```
+Note: Don't forget
+- Whitelist your EC2 public IP in MongoDB Atlas
+  Go to your MongoDB Atlas dashboard: Navigate to Network Access, Click “Add IP Address” 
+- You need to allow port 4000 in the security group attached to your EC2
+
+### 3- Test auto Update Justification (Watchtower)
+To continuously check for changes in the Docker image and pull updates, use Watchtower, a tool that monitors Docker images and automatically updates running containers. Watchtower is chosen for its simplicity, lightweight nature, and ability to handle private registries securely.
+
+1- Add Watchtower to docker-compose.yml
+2- Update and Restart Docker Compose:
+  - Copy the updated docker-compose.yml to the VM
+  - On the VM, restart Docker Compose:
+```bash
+    docker compose down
+    docker compose up -d
+```
+3- Make a change in your app repo.
+4- Rebuild and push the Docker image:
+```bash 
+  docker build -t tokashawky/todo-list-nodejs:latest .
+  docker push tokashawky/todo-list-nodejs:latest
+```
+Wait 30–60 seconds and on the VM, run:
+```bash 
+docker ps
+```
+→ You should see that todo-app was restarted with the new image (check home page).
+
+NOTE:
+To have **Secure Approach for Watchtower Credentials**
+```bash 
+docker login -u tokashawky
+cat ~/.docker/config.json
+```
+Verify the login:You should see an auths section with a base64-encoded token
