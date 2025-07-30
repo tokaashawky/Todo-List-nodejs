@@ -34,4 +34,5 @@
       docker-ce-cli: Command-line interface.
       containerd.io: Core container runtime.
       docker-buildx-plugin: Build tool plugin.
-      docker-compose-plugin: For running multi-container apps using Compose v2.
+
+✅ 10. Install Docker compose
