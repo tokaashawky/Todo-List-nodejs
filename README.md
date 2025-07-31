@@ -149,3 +149,72 @@ docker login -u tokashawky
 cat ~/.docker/config.json
 ```
 Verify the login:You should see an auths section with a base64-encoded token
+
+## 📌 Todo List Node.js application on a Kubernetes cluster (Part 4)
+
+### Step 1: Set Up a Remote EC2 Instance
+Launch an EC2 Instance:
+- Choose Ubuntu Server 22.04 LTS (HVM, SSD Volume Type).
+- Select an instance type (e.g., t3.medium for Kubernetes, with at least 2 vCPUs and 4 GiB RAM).
+- Configure:
+  Key Pair: Create or use an existing SSH key pair
+  Security Group: Allow inbound traffic:
+    SSH (port 22) from your local IP.
+    HTTP (port 80) and HTTPS (port 443) for application access.
+    Port 4000 for the Todo app (temporary for testing).
+    Port 6443 for Kubernetes API access.
+- Storage: At least 20 GiB for Docker and Kubernetes.
+- Launch the instance and note its public IP
+
+### Step 2: Use Ansible from Local Machine to Configure EC2
+**Update Ansible Inventory, Ansible playbook and add K8s role**
+- Run the Playbook:
+```bash
+  ansible-playbook playbook.yaml
+```
+- Verify Kubernetes:
+```bash
+  kubectl get nodes
+```
+- Set Up Docker Hub Credentials on EC2
+```bash
+  docker login -u tokashawky
+```
+
+### Step 3: Create Kubernetes Manifests
+- Create a GitHub Repository
+- Define Kubernetes Manifests
+  "Create ConfigMap from .env file"
+```bash 
+    kubectl create configmap todo-config --from-env-file=.env
+```
+- Push to GitHub
+
+### Step 4: Install and Configure 
+```bash
+# Install ArgoCD:
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Verify pods
+kubectl get pods -n argocd
+``` 
+You're running ArgoCD inside an EC2 instance using minikube, and you're using:
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+This means ArgoCD is only accessible from inside the EC2 instance itself via https://localhost:8080
+
+SSH Tunnel to Forward Port to Your Local Machine
+```bash 
+ssh -i /path/to/your-key.pem -L 8080:localhost:8080 ubuntu@<EC2-PUBLIC-IP>
+```
+Then, visit: https://localhost:8080
+
+Login with:
+```bash
+Username: admin
+To get Password run:
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d; echo
+```
+
+
