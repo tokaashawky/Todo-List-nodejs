@@ -1,0 +1,60 @@
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install required system packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - conntrack
+    state: present
+
+# --- Minikube Installation ---
+
+- name: Download Minikube binary
+  ansible.builtin.command:
+    cmd: curl -Lo /tmp/minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+  args:
+    creates: /tmp/minikube
+
+- name: Install Minikube
+  copy:
+    src: /tmp/minikube
+    dest: /usr/local/bin/minikube
+    mode: '0755'
+    remote_src: yes
+
+# --- kubectl Installation ---
+
+- name: Download latest stable kubectl version
+  shell: curl -Ls https://dl.k8s.io/release/stable.txt
+  register: stable_kubectl_version
+
+- name: Debug kubectl version
+  debug:
+    var: stable_kubectl_version.stdout
+
+- name: Download kubectl binary with curl
+  shell: curl -Lo /usr/local/bin/kubectl https://dl.k8s.io/release/{{ stable_kubectl_version.stdout }}/bin/linux/amd64/kubectl
+  args:
+    creates: /usr/local/bin/kubectl
+
+- name: Make kubectl executable
+  file:
+    path: /usr/local/bin/kubectl
+    mode: '0755'
+
+# --- Start Minikube as user ubuntu ---
+
+- name: Start Minikube (as ubuntu user)
+  command: minikube start --driver=docker
+  become: yes
+  become_user: ubuntu
+  environment:
+    PATH: /usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/sbin
+  args:
+    creates: /home/ubuntu/.minikube
+

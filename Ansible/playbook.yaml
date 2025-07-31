@@ -1,4 +1,11 @@
-- name: Install Docker on remote VM
-  hosts: nodes
+# - name: Install Docker on remote VM
+#   hosts: nodes
+#   roles:
+#     - docker
+
+- name: Install Docker and EKS on K8s machine
+  hosts: K8s
+  become: yes
   roles:
     - docker
+    - k8s
